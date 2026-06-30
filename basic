@@ -1,0 +1,15 @@
+Yes. I think 7266 is the best next one to start with.
+Why I’m confident about that:
+it proves a real end-to-end path earlier: minio -> analyticsapi -> GET /narratives/{cid}
+it is smaller and more isolated than building the full summarizer object-store flow
+it keeps responsibilities clean: API reads summary files only, not raw reports
+it de-risks the serving path before we spend time on summarizer read/write logic
+So 7266 gives you a visible win with less moving parts.
+The order I’d use is:
+7266
+7264
+7265
+The only reason I’d change that is if:
+your mentor explicitly wants 7264 first for a dependency reason
+or your open PR on 7262 + 7263 has changes you need to fix first
+Otherwise, yes, 7266 is the best next step. If you want, I’ll break down 7266 now into exactly what it expects and which files we should touch.
