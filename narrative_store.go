@@ -47,6 +47,7 @@ func (s *NarrativeStore) Get(ctx context.Context, cid string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("get object %s: %w", key, err)
 	}
+	defer obj.Close()
 
 	if _, err := obj.Stat(); err != nil {
 		if resp := minio.ToErrorResponse(err); resp.Code == "NoSuchKey" || resp.Code == "NoSuchObject" {
