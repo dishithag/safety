@@ -1,131 +1,36 @@
-7266 is about making the analyticsapi code return a summary file that already exists in minio.
-That is the whole point.
-What the ticket wants:
-you manually put a summary file into minio
-the analyticsapi code reads that summary file
-when the CID is requested, the file content is returned
-What it does not want:
-no LLM
-no summary generation
-no raw report reading
-no summarizer pipeline yet
-So for this ticket, we are pretending:
-“a summary already exists”
-and then proving:
-“the analytics API can read and return it”
-The exact path we want to prove is:
-manually place summary in minio
-request CID through analytics API
-analytics API finds the matching summary file
-analytics API returns the Markdown text
-Why this ticket exists:
-because it proves the storage-to-serving flow before the summarizer is fully built.
-What I suggested beyond the ticket:
-I suggested doing it in a clean design instead of the fastest messy way.
-Messy way:
-put storage-reading code directly inside the API route logic
-Better way:
-keep the route simple
-let the route call the narrative logic
-let the narrative logic call a separate storage reader
-let that storage reader know how to fetch the file from minio
-Why that is better:
-cleaner structure
-easier testing
-easier to change later
-avoids mixing too many responsibilities in one file
-So the recommended split is:
-api.go
-receives the request
+What this file is used for
+reads a stored summary from minio
+takes a CID
+builds the object key
+fetches the .md file
+returns the markdown text
+What it does
+connects to minio using config
+uses the bucket from config
+looks for:summary/cids/{cid}.md
 
-narrative.go
-asks for the summary for a CID
+checks whether the object exists
+reads the content
+returns:summary text
+or error
 
-a new storage-related file/package
-actually reads the summary from minio
+Why this file exists
+because analyticsapi needs real storage-reading code
+domain/narrative.go only defined the contract
+this file is the actual implementation of that contract
+Why placed under internal/analyticsapi/
+because this logic belongs to the analyticsapi service
+it is not shared project-wide logic
+it is API-side summary retrieval logic
+Why under gateways/
+because it talks to an external system
+external system here = minio / object store
+gateways/ is for I/O / outside-world interaction
+Why under gateways/repos/ and not just gateways/
+gateways/ would also work
+repos/ is more specific
+it signals:this file is about stored data access
+this acts like repository-style retrieval
 
-That extra thing I suggested is:
-create a small interface or storage abstraction for reading summaries
-then have one implementation that reads from minio
-That helps because later:
-if storage changes
-or you want easier tests
-or you want cleaner code review
-the structure is already good
-So the short version is:
-The ticket
-make analyticsapi return a manually stored summary by CID
-My extra suggestion
-do it with a clean storage-reading layer instead of hardcoding minio reads directly into the route/usecase
-That is the current idea.
-If you want, next I can give you the exact file plan for 7266 in plain English:
-which existing file changes
-which new file we would likely add
-why each one is needed.
-
-8:14 PM
-
-
-
-
-
-
-okay cool so now what exactky do we have to do whats the first step pelse explain as well what youre doing and the interntation or though process as well pelase 
-
-
-
-
-8:19 PM
-
-
-
-
-
-
-First step for 7266 is:
-Decide the summary file key/path format and make the analyticsapi code read from that path by CID.
-For this ticket, the agreed default path from your docs is:
-summary/cids/{cid}.md
-Example:
-summary/cids/0f53593ceae34995af8fd295c18f1e25.md
-So the first thing we need to do is make the analyticsapi side assume:
-“if someone asks for CID X, I should look for summary/cids/X.md in minio”
-That is the starting point.
-What we have to do overall
-For 7266, the work is basically:
-Define how analyticsapi finds the summary file from the CID
-Add code on the analyticsapi side to read that summary file from minio
-Return that file’s content from the existing narrative route
-Handle missing file cleanly
-Manually place one summary file in minio and test the route
-Why this is the first step
-Because before writing any storage code, we need a clear contract:
-input: CID from the request
-output: Markdown summary text
-lookup rule: summary/cids/{cid}.md
-If we do not settle that first, the rest of the code becomes guesswork.
-My thought process
-I’m optimizing for clean boundaries.
-We already decided:
-summarizer side deals with raw report JSON
-analyticsapi side deals with finished summaries only
-So for this ticket, I do not want to:
-make analyticsapi read raw reports
-hardcode weird file paths in multiple places
-put storage logic directly in the route handler if we can avoid it
-Instead, I want this shape:
-route gets CID
-narrative logic asks for summary by CID
-storage reader fetches summary/cids/{cid}.md from minio
-text comes back
-That keeps the design clean.
-What file work I expect
-Most likely:
-change [narrative.go](/Users/dishithagurram/Desktop/Internship/zerotrust-analytics/internal/analyticsapi/usecase/narrative/narrative.go)
-probably add a new analyticsapi storage file/package for minio reading
-update [main.go](/Users/dishithagurram/Desktop/Internship/zerotrust-analytics/cmd/analyticsapi/main.go) to wire it in
-Very plain-English version
-The first concrete thing we need to build is:
-“When the API gets a CID, it should know which summary file to open in minio.”
-That is step one.
-If you want, I can now move from explanation to implementation and make the first clean storage-reader piece for 7266.
+so:gateways/ = broad external interaction bucket
+gateways/repos/ = external data-storage access specifically
