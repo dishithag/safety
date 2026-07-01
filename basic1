@@ -1,36 +1,192 @@
-What this file is used for
-reads a stored summary from minio
-takes a CID
-builds the object key
-fetches the .md file
-returns the markdown text
+Inside that block
+if resp := minio.ToErrorResponse(err); resp.Code == "NoSuchKey" || resp.Code == "NoSuchObject" {
 What it does
-connects to minio using config
-uses the bucket from config
-looks for:summary/cids/{cid}.md
+converts the raw error into a structured minio error response
+checks if the error means:object/file does not exist
 
-checks whether the object exists
-reads the content
-returns:summary text
-or error
+Where minio.ToErrorResponse(...) comes from
+from the MinIO SDK library
+not your own function
+What resp.Code means
+the storage system gives an error code
+we check whether it is:"NoSuchKey"
+or "NoSuchObject"
 
-Why this file exists
-because analyticsapi needs real storage-reading code
-domain/narrative.go only defined the contract
-this file is the actual implementation of that contract
-Why placed under internal/analyticsapi/
-because this logic belongs to the analyticsapi service
-it is not shared project-wide logic
-it is API-side summary retrieval logic
-Why under gateways/
-because it talks to an external system
-external system here = minio / object store
-gateways/ is for I/O / outside-world interaction
-Why under gateways/repos/ and not just gateways/
-gateways/ would also work
-repos/ is more specific
-it signals:this file is about stored data access
-this acts like repository-style retrieval
+Why both
+both mean the requested stored file is missing
+Next line
+return "", fmt.Errorf("%w: %s", domain.ErrNarrativeNotFound, cid)
+What it does
+return:empty string
+wrapped “narrative not found” error
 
-so:gateways/ = broad external interaction bucket
-gateways/repos/ = external data-storage access specifically
+Where domain.ErrNarrativeNotFound comes from
+defined in:[internal/analyticsapi/domain/narrative.go](/Users/dishithagurram/Desktop/Internship/zerotrust-analytics/internal/analyticsapi/domain/narrative.go)
+
+Where fmt.Errorf(...) comes from
+built-in Go fmt package
+Why %w
+wraps the original named error properly
+so later code can check:“is this ErrNarrativeNotFound?”
+
+That later check happens in:
+[api.go](/Users/dishithagurram/Desktop/Internship/zerotrust-analytics/internal/analyticsapi/gateways/api/api.go)
+Next line
+return "", fmt.Errorf("stat object %s: %w", key, err)
+What it does
+if the error is not “object missing”
+return a general storage error
+Meaning
+something went wrong while checking the object
+but it is not just a “not found” case
+Next line after the if block
+body, err := io.ReadAll(obj)
+What it does
+read all contents from the object reader
+Where io.ReadAll(...) comes from
+built-in Go io package
+not your function
+Important
+this only reads raw bytes
+it does not parse JSON or Markdown
+What body becomes
+raw bytes of the stored summary file
+Next block
+if err != nil {
+	return "", fmt.Errorf("read object %s: %w", key, err)
+}
+What it does
+if reading file contents failed
+return an error
+Where fmt.Errorf(...) comes from
+Go fmt package
+Final line
+return string(body), nil
+What it does
+convert raw bytes into a Go string
+return the string
+nil means no error
+Why string(body)
+the summary file is text / markdown
+the API wants to return text
+Very short flow from line 52 onward
+close object later
+check if object exists
+if missing -> return ErrNarrativeNotFound
+otherwise read file contents
+return file contents as text
+If you want, next I can explain the top part of the file:
+the struct
+the constructor NewNarrativeStore(...)
+in the same style.
+
+6:36 PM
+
+
+
+
+
+
+what is is thr if bfore the _
+
+
+
+6:38 PM
+
+
+
+
+
+
+In this line:
+if _, err := obj.Stat(); err != nil {
+the if before _ is just starting an if statement.
+So this line means:
+first run obj.Stat()
+assign its results
+then check whether err != nil
+Structure of this syntax
+Go allows this pattern:
+if value, err := someFunction(); err != nil {
+    ...
+}
+It means:
+call the function
+create temporary variables
+immediately check a condition
+In your line
+if _, err := obj.Stat(); err != nil {
+Breakdown:
+if
+starts the if statement
+
+_, err := obj.Stat()
+run obj.Stat() and assign returned values
+
+;
+separates:
+the variable assignment part
+the condition part
+
+err != nil
+the actual condition being checked
+
+So the if is not part of _.
+It is just the start of the if statement.
+Very short version
+This line means:
+call obj.Stat()
+ignore the first return value
+store the second one in err
+if err is not nil, go into the block
+
+6:38 PM
+
+
+
+
+
+
+what is Errorf
+
+
+
+6:52 PM
+
+
+
+
+
+
+Errorf is a function from Go’s built-in fmt package.
+It is used to create an error message, often with values inserted into it.
+In your file
+You see things like:
+fmt.Errorf("get object %s: %w", key, err)
+That means:
+create an error
+include the key
+wrap the original err
+Why f
+The f means formatted.
+Like:
+Printf = print formatted
+Sprintf = string formatted
+Errorf = error formatted
+What it returns
+It returns an error.
+So fmt.Errorf(...) creates a new error value.
+Why we use it
+Because it lets us:
+add context
+include variable values
+preserve the original error sometimes
+Example
+fmt.Errorf("read object %s: %w", key, err)
+means:
+something failed while reading object key
+include the original error too
+Very short version
+Errorf = create a formatted error message
+comes from fmt
+returns an error
