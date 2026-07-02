@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: analyticsapi
+  namespace: zerotrust-analytics
+  labels:
+    app: analyticsapi
+spec:
+  selector:
+    app: analyticsapi
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyticsapi
+  namespace: zerotrust-analytics
+  labels:
+    app: analyticsapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analyticsapi
+  template:
+    metadata:
+      labels:
+        app: analyticsapi
+    spec:
+      containers:
+        - name: analyticsapi
+          image: zerotrust-analytics/analyticsapi
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: LISTEN_ADDR
+              value: ":8080"
+            - name: S3_ENDPOINT
+              value: "http://minio:9000"
+            - name: S3_BUCKET
+              value: "dev"
+            - name: S3_ACCESS_KEY
+              value: "minioadmin"
+            - name: S3_SECRET_KEY
+              value: "minioadmin"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
