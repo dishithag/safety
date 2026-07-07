@@ -1,0 +1,50 @@
+package summarizer
+
+import (
+	"strings"
+	"testing"
+
+	shared "go.crwd.dev/ce/zerotrust-analytics/domain"
+)
+
+func TestSummaryObjectKey(t *testing.T) {
+	t.Parallel()
+
+	const cid = "0f53593ceae34995af8fd295c18f1e25"
+	if got, want := summaryObjectKey(cid), "summary/cids/0f53593ceae34995af8fd295c18f1e25.md"; got != want {
+		t.Fatalf("summaryObjectKey(%q) = %q, want %q", cid, got, want)
+	}
+}
+
+func TestRenderPlaceholderSummary(t *testing.T) {
+	t.Parallel()
+
+	report := &shared.CIDReport{
+		CID:                 "abc123",
+		NumAIDs:             42,
+		AverageOverallScore: 91.5,
+		AverageOSScore:      88.0,
+		Platforms: []shared.PlatformSummary{
+			{
+				Name:                "Windows 11",
+				NumAIDs:             21,
+				AverageOverallScore: 93.2,
+				AverageOSScore:      89.1,
+			},
+		},
+	}
+
+	summary := RenderPlaceholderSummary(report)
+	for _, want := range []string{
+		"## Zero Trust Audit Narrative",
+		"### Executive Summary",
+		"CID `abc123` covers 42 aids across 1 platforms.",
+		"### Platform Highlights",
+		"- Windows 11: 21 aids, overall 93.20, OS 89.10.",
+		"### Demo Note",
+	} {
+		if !strings.Contains(summary, want) {
+			t.Fatalf("summary missing %q\nfull summary:\n%s", want, summary)
+		}
+	}
+}
