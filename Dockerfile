@@ -12,3 +12,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/app ./cmd/${CMD}
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/app /app
 ENTRYPOINT ["/app"]
+
+
+Now it does:
+COPY go.mod go.sum ./
+RUN go mod download
+Why this makes sense:
+go.mod declares dependencies
+go.sum pins the dependency checksums
+copying both before go mod download makes the container build more consistent with what you tested locally
