@@ -1,1 +1,22 @@
-Hi Jaxson, I’ve started working on the GenAI Hub integration ticket and have the code structure in place, but I need one detail to finish the real wiring. The ticket mentions using zta_definitions.json as grounding along with the per-CID report. Could you let me know where that file lives locally, or which repo/path I should pull it from? Also, if there’s a preferred way the team expects it to be loaded, please let me know.
+I started 7268 and the code side is in a good state.
+I added the LLM-generation path here:
+internal/summarizer/narrative_generator.go
+internal/summarizer/genaihub.go
+internal/summarizer/prompt.go
+internal/summarizer/grounding.go
+I also updated:
+internal/summarizer/config.go
+cmd/summarizer/main.go
+deploy/summarizer.yaml
+And I added unit tests here:
+internal/summarizer/narrative_generator_test.go
+internal/summarizer/genaihub_test.go
+internal/summarizer/prompt_test.go
+internal/summarizer/grounding_test.go
+What it does now:
+keeps the current offline placeholder path working
+adds a real genaihub generator path behind config
+loads grounding JSON from ZTA_DEFINITIONS_PATH
+builds the prompt from CID report + grounding
+isolates the HTTP call to GenAI Hub in one file
+keeps main.go thinner by calling a generator instead of hardcoding placeholder summary logic
