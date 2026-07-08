@@ -20,3 +20,12 @@ loads grounding JSON from ZTA_DEFINITIONS_PATH
 builds the prompt from CID report + grounding
 isolates the HTTP call to GenAI Hub in one file
 keeps main.go thinner by calling a generator instead of hardcoding placeholder summary logic
+
+
+
+Hi Jaxson, for RISK-7267, I want to capture the desired report style before tuning the prompt. Could you help me confirm:
+
+1. Who is the target audience for the generated report — executive, security analyst, or both?
+2. What format/sections do we want in the final Markdown report?
+3. Do we already have an example of a good report or desired output style that I can use as the target?
+4. Who should review/approve that example?
