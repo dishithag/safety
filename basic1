@@ -1,31 +1,21 @@
-I started 7268 and the code side is in a good state.
-I added the LLM-generation path here:
-internal/summarizer/narrative_generator.go
-internal/summarizer/genaihub.go
-internal/summarizer/prompt.go
-internal/summarizer/grounding.go
-I also updated:
-internal/summarizer/config.go
-cmd/summarizer/main.go
-deploy/summarizer.yaml
-And I added unit tests here:
-internal/summarizer/narrative_generator_test.go
-internal/summarizer/genaihub_test.go
-internal/summarizer/prompt_test.go
-internal/summarizer/grounding_test.go
-What it does now:
-keeps the current offline placeholder path working
-adds a real genaihub generator path behind config
-loads grounding JSON from ZTA_DEFINITIONS_PATH
-builds the prompt from CID report + grounding
-isolates the HTTP call to GenAI Hub in one file
-keeps main.go thinner by calling a generator instead of hardcoding placeholder summary logic
+Hi Jaxson, for the GenAI/LLM summarizer work, I want to confirm a few things before wiring the live path:
 
+1. For RISK-7268, should the summarizer call GenAI Hub directly over HTTP, or is there an internal Go SDK/client package we should use?
 
+2. What GenAI Hub endpoint/base URL should the summarizer call?
 
-Hi Jaxson, for RISK-7267, I want to capture the desired report style before tuning the prompt. Could you help me confirm:
+3. Which approved model ID should we use? I currently see Claude/Opus options in GenAI Hub, but I want the exact model string for code/config.
 
-1. Who is the target audience for the generated report — executive, security analyst, or both?
-2. What format/sections do we want in the final Markdown report?
-3. Do we already have an example of a good report or desired output style that I can use as the target?
-4. Who should review/approve that example?
+4. Should I use my personal GenAI Hub API key for local testing, or should this use an automation/service key?
+
+5. Do you have a sample curl command or request/response JSON for a GenAI Hub API call?
+
+6. Where should I get `scripts/zta_definitions.json` from locally? Which repo/path should I use?
+
+7. Are the sample `reports/cids/{cid}.json` files in this repo representative of the real ZTA report shape, or should I expect additional fields/nesting?
+
+8. For MVP, should the generated Markdown focus only on one CID’s current report, or should it include broader trends/benchmarking? I saw trends/benchmarking listed as stretch goals, so I want to confirm current scope.
+
+9. For RISK-7267, who is the target audience for the generated report — executive, security analyst, or both?
+
+10. Do we already have a good example report/output style that I should target for prompt tuning?
