@@ -10,7 +10,6 @@ type Config struct {
 	S3AccessKey       string
 	S3SecretKey       string
 	NarrativeProvider string
-	GenAIHubBaseURL   string
 	GenAIHubModel     string
 }
 
@@ -23,7 +22,6 @@ func LoadConfig(serviceName string) *Config {
 		S3AccessKey:       envOr("S3_ACCESS_KEY", "minioadmin"),
 		S3SecretKey:       envOr("S3_SECRET_KEY", "minioadmin"),
 		NarrativeProvider: envOr("NARRATIVE_PROVIDER", ""),
-		GenAIHubBaseURL:   envOr("ANTHROPIC_BASE_URL", ""),
 		GenAIHubModel:     envOr("GENAI_HUB_MODEL", ""),
 	}
 }
