@@ -3,9 +3,11 @@ package summarizer
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	anthropic "github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 
 	shared "go.crwd.dev/ce/zerotrust-analytics/domain"
 )
@@ -21,8 +23,19 @@ func NewGenAIHubGenerator(cfg *Config) (*GenAIHubGenerator, error) {
 	if strings.TrimSpace(cfg.GenAIHubModel) == "" {
 		return nil, fmt.Errorf("create GenAI Hub generator: GENAI_HUB_MODEL is not set")
 	}
+	baseURL := strings.TrimSpace(os.Getenv("ANTHROPIC_BASE_URL"))
+	if baseURL == "" {
+		return nil, fmt.Errorf("create GenAI Hub generator: ANTHROPIC_BASE_URL is not set")
+	}
+	authToken := strings.TrimSpace(os.Getenv("ANTHROPIC_AUTH_TOKEN"))
+	if authToken == "" {
+		return nil, fmt.Errorf("create GenAI Hub generator: ANTHROPIC_AUTH_TOKEN is not set")
+	}
 
-	client := anthropic.NewClient()
+	client := anthropic.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAuthToken(authToken),
+	)
 	return newGenAIHubGenerator(cfg.GenAIHubModel, textInvokerFunc(func(ctx context.Context, prompt string) (string, error) {
 		response, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 			Model:     anthropic.Model(cfg.GenAIHubModel),
