@@ -19,6 +19,11 @@ func main() {
 		logger.Error("failed to initialize report store", "err", err)
 		os.Exit(1)
 	}
+	generator, err := summarizer.NewNarrativeGenerator(cfg)
+	if err != nil {
+		logger.Error("failed to initialize narrative generator", "err", err)
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	ids, err := store.ListCIDReportIDs(ctx)
@@ -37,7 +42,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	summary := summarizer.RenderPlaceholderSummary(report)
+	summary, err := generator.Summarize(ctx, report)
+	if err != nil {
+		logger.Error("failed to summarize cid report", "cid", report.CID, "err", err)
+		os.Exit(1)
+	}
 	if err := store.WriteSummary(ctx, report.CID, summary); err != nil {
 		logger.Error("failed to write summary", "cid", report.CID, "err", err)
 		os.Exit(1)
@@ -48,6 +57,7 @@ func main() {
 		"available_reports", len(ids),
 		"cid", report.CID,
 		"platforms", len(report.Platforms),
+		"narrative_provider", cfg.NarrativeProvider,
 		"summary_key", "summary/cids/"+report.CID+".md",
 	)
 }
