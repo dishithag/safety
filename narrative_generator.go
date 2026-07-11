@@ -15,12 +15,10 @@ type NarrativeGenerator interface {
 // NewNarrativeGenerator selects the configured narrative generation path.
 func NewNarrativeGenerator(cfg *Config) (NarrativeGenerator, error) {
 	switch cfg.NarrativeProvider {
-	case "placeholder":
+	case "", "placeholder":
 		return PlaceholderGenerator{}, nil
 	case "genaihub":
 		return NewGenAIHubGenerator(cfg)
-	case "":
-		return nil, fmt.Errorf("NARRATIVE_PROVIDER is not set")
 	default:
 		return nil, fmt.Errorf("unsupported narrative provider %q", cfg.NarrativeProvider)
 	}
