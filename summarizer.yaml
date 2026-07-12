@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: summarizer
+  namespace: zerotrust-analytics
+  labels:
+    app: summarizer
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: summarizer
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: summarizer
+          image: zerotrust-analytics/summarizer
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: S3_ENDPOINT
+              value: "http://minio:9000"
+            - name: S3_BUCKET
+              value: "dev"
+            - name: S3_ACCESS_KEY
+              value: "minioadmin"
+            - name: S3_SECRET_KEY
+              value: "minioadmin"
+            - name: NARRATIVE_PROVIDER
+              value: "placeholder"
