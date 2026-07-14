@@ -118,7 +118,7 @@ func (s *ReportStore) LoadCloudAuditReportFromStore(ctx context.Context) (*share
 // WriteSummary stores a Markdown narrative for the given CID at the agreed
 // summary object-store key. Re-writing the same key is safe.
 func (s *ReportStore) WriteSummary(ctx context.Context, cid string, markdown string) error {
-	key := summaryObjectKey(cid)
+	key := SummaryObjectKey(cid)
 	reader := bytes.NewReader([]byte(markdown))
 
 	_, err := s.client.PutObject(ctx, s.bucket, key, reader, int64(reader.Len()), minio.PutObjectOptions{
@@ -133,7 +133,7 @@ func (s *ReportStore) WriteSummary(ctx context.Context, cid string, markdown str
 
 // SummaryExists reports whether a Markdown summary has already been written for the CID.
 func (s *ReportStore) SummaryExists(ctx context.Context, cid string) (bool, error) {
-	key := summaryObjectKey(cid)
+	key := SummaryObjectKey(cid)
 
 	if _, err := s.client.StatObject(ctx, s.bucket, key, minio.StatObjectOptions{}); err != nil {
 		if isMissingObjectError(err) {
