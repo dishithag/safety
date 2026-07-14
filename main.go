@@ -82,7 +82,7 @@ func run(ctx context.Context, logger *slog.Logger, store reportStore, generator 
 		}
 		if exists {
 			stats.Skipped++
-			logger.Info("skipping already summarized cid report", "cid", cid, "summary_key", summaryKey(cid))
+			logger.Info("skipping already summarized cid report", "cid", cid, "summary_key", summarizer.SummaryObjectKey(cid))
 			continue
 		}
 
@@ -112,7 +112,7 @@ func run(ctx context.Context, logger *slog.Logger, store reportStore, generator 
 			"cid", report.CID,
 			"platforms", len(report.Platforms),
 			"narrative_provider", provider,
-			"summary_key", summaryKey(report.CID),
+			"summary_key", summarizer.SummaryObjectKey(report.CID),
 		)
 	}
 
@@ -124,8 +124,4 @@ func effectiveNarrativeProvider(provider string) string {
 		return "placeholder"
 	}
 	return provider
-}
-
-func summaryKey(cid string) string {
-	return "summary/cids/" + cid + ".md"
 }
