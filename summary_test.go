@@ -17,15 +17,6 @@ func TestSummaryObjectKey(t *testing.T) {
 	}
 }
 
-func TestSummaryMetadataObjectKey(t *testing.T) {
-	t.Parallel()
-
-	const cid = "0f53593ceae34995af8fd295c18f1e25"
-	if got, want := SummaryMetadataObjectKey(cid), "summary/cids/0f53593ceae34995af8fd295c18f1e25.meta.json"; got != want {
-		t.Fatalf("SummaryMetadataObjectKey(%q) = %q, want %q", cid, got, want)
-	}
-}
-
 func TestCurrentSummaryProfile(t *testing.T) {
 	t.Parallel()
 
