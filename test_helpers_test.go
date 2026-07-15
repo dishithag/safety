@@ -56,7 +56,7 @@ func testTechnicalGuidance(control string) TechnicalGuidance {
 		Meaning:                   control + " defines the expected endpoint protection state.",
 		SecurityImpact:            "Low coverage can leave endpoints without the intended protection.",
 		ZTAEvaluation:             "ZTA evaluates the reported configured or active state, not only whether the capability exists.",
-		RemediationSteps:          []string{"Confirm prerequisites and apply the approved platform policy."},
+		RemediationSteps:          []string{"Confirm prerequisites for the platform policy.", "Apply the approved policy to a representative pilot group."},
 		RemediationDisruption:     RemediationDisruption{Level: "Low", Rationale: "The policy is reversible and does not normally require downtime."},
 		OperationalConsiderations: "Test policy compatibility and retain a rollback path.",
 		VerificationSteps:         []string{"Recheck the setting and confirm that it reports the intended enabled state."},
