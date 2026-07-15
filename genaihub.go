@@ -12,6 +12,8 @@ import (
 	shared "go.crwd.dev/ce/zerotrust-analytics/domain"
 )
 
+const genAIHubMaxTokens int64 = 16384
+
 // GenAIHubGenerator turns a CID report into Markdown by calling GenAI Hub.
 type GenAIHubGenerator struct {
 	model   string
@@ -39,13 +41,16 @@ func NewGenAIHubGenerator(cfg *Config) (*GenAIHubGenerator, error) {
 	return newGenAIHubGenerator(cfg.GenAIHubModel, textInvokerFunc(func(ctx context.Context, prompt string) (string, error) {
 		response, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 			Model:       anthropic.Model(cfg.GenAIHubModel),
-			MaxTokens:   8192,
+			MaxTokens:   genAIHubMaxTokens,
 			Temperature: anthropic.Float(0),
 			Messages: []anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 			},
 		})
 		if err != nil {
+			return "", err
+		}
+		if err := validateGenAIHubStopReason(response.StopReason, response.Usage.OutputTokens); err != nil {
 			return "", err
 		}
 
@@ -55,6 +60,17 @@ func NewGenAIHubGenerator(cfg *Config) (*GenAIHubGenerator, error) {
 		}
 		return b.String(), nil
 	}))
+}
+
+func validateGenAIHubStopReason(reason anthropic.StopReason, outputTokens int64) error {
+	switch reason {
+	case anthropic.StopReasonMaxTokens:
+		return fmt.Errorf("model response was truncated after %d output tokens; increase the output limit or reduce the requested report detail", outputTokens)
+	case anthropic.StopReasonRefusal:
+		return fmt.Errorf("model refused the guidance request")
+	default:
+		return nil
+	}
 }
 
 // Summarize asks GenAI Hub for structured guidance and renders deterministic Markdown.
