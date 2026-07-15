@@ -79,30 +79,46 @@ func TestListOrderHelperExpectation(t *testing.T) {
 func TestSummaryObjectMetadataRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	want := SummaryMetadata{
+	genAI := SummaryMetadata{
 		SourceSHA256:      "abc123",
 		SummaryVersion:    "v2",
 		NarrativeProvider: "genaihub",
 		Model:             "claude-example",
 		GeneratedAt:       time.Date(2026, 7, 14, 12, 34, 56, 123, time.UTC),
 	}
-	encoded := summaryObjectUserMetadata(want)
+	placeholder := SummaryMetadata{
+		SourceSHA256:      "def456",
+		SummaryVersion:    "v1",
+		NarrativeProvider: "placeholder",
+		GeneratedAt:       time.Date(2026, 7, 14, 12, 34, 56, 0, time.UTC),
+	}
+	genAIMetadata := summaryObjectUserMetadata(genAI)
 
 	tests := []struct {
 		name       string
 		objectInfo minio.ObjectInfo
+		want       SummaryMetadata
 	}{
 		{
 			name: "minio user metadata",
 			objectInfo: minio.ObjectInfo{
-				UserMetadata: minio.StringMap(encoded),
+				UserMetadata: minio.StringMap(genAIMetadata),
 			},
+			want: genAI,
 		},
 		{
 			name: "s3 metadata headers",
 			objectInfo: minio.ObjectInfo{
-				Metadata: metadataHeaders(encoded),
+				Metadata: metadataHeaders(genAIMetadata),
 			},
+			want: genAI,
+		},
+		{
+			name: "placeholder metadata without model",
+			objectInfo: minio.ObjectInfo{
+				UserMetadata: minio.StringMap(summaryObjectUserMetadata(placeholder)),
+			},
+			want: placeholder,
 		},
 	}
 
@@ -117,8 +133,8 @@ func TestSummaryObjectMetadataRoundTrip(t *testing.T) {
 			if !exists {
 				t.Fatal("summaryMetadataFromObjectInfo() exists = false, want true")
 			}
-			if !reflect.DeepEqual(got, want) {
-				t.Fatalf("summaryMetadataFromObjectInfo() = %+v, want %+v", got, want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("summaryMetadataFromObjectInfo() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
