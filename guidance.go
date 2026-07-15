@@ -100,8 +100,13 @@ func unwrapJSONResponse(raw string) (string, error) {
 	}
 
 	lines := strings.Split(response, "\n")
-	if len(lines) < 3 || (strings.TrimSpace(lines[0]) != "```json" && strings.TrimSpace(lines[0]) != "```") || strings.TrimSpace(lines[len(lines)-1]) != "```" {
-		return "", fmt.Errorf("response contains an invalid JSON code fence")
+	if len(lines) < 3 || strings.TrimSpace(lines[len(lines)-1]) != "```" {
+		return "", fmt.Errorf("response contains an incomplete JSON code fence; model output may have been truncated")
+	}
+	openingFence := strings.TrimSpace(lines[0])
+	language := strings.TrimSpace(strings.TrimPrefix(openingFence, "```"))
+	if !strings.HasPrefix(openingFence, "```") || (language != "" && !strings.EqualFold(language, "json")) {
+		return "", fmt.Errorf("response contains an unsupported JSON code fence %q", openingFence)
 	}
 	return strings.TrimSpace(strings.Join(lines[1:len(lines)-1], "\n")), nil
 }
@@ -254,27 +259,27 @@ func validateTechnicalGuidance(guidance *TechnicalGuidance) error {
 		return fmt.Errorf("remediation_disruption.level = %q, want Low, Moderate, or High", guidance.RemediationDisruption.Level)
 	}
 
-	if len(guidance.RemediationSteps) == 0 || len(guidance.RemediationSteps) > 5 {
-		return fmt.Errorf("remediation_steps count = %d, want 1..5", len(guidance.RemediationSteps))
+	if len(guidance.RemediationSteps) < 2 || len(guidance.RemediationSteps) > 4 {
+		return fmt.Errorf("remediation_steps count = %d, want 2..4", len(guidance.RemediationSteps))
 	}
 	for i, step := range guidance.RemediationSteps {
 		if strings.TrimSpace(step) == "" {
 			return fmt.Errorf("remediation_steps[%d] is empty", i)
 		}
 	}
-	if len(guidance.VerificationSteps) == 0 || len(guidance.VerificationSteps) > 3 {
-		return fmt.Errorf("verification_steps count = %d, want 1..3", len(guidance.VerificationSteps))
+	if len(guidance.VerificationSteps) == 0 || len(guidance.VerificationSteps) > 2 {
+		return fmt.Errorf("verification_steps count = %d, want 1..2", len(guidance.VerificationSteps))
 	}
 	for i, step := range guidance.VerificationSteps {
 		if strings.TrimSpace(step) == "" {
 			return fmt.Errorf("verification_steps[%d] is empty", i)
 		}
 	}
-	if len(guidance.AdminTerminology) > 4 {
-		return fmt.Errorf("admin_terminology count = %d, maximum is 4", len(guidance.AdminTerminology))
+	if len(guidance.AdminTerminology) > 2 {
+		return fmt.Errorf("admin_terminology count = %d, maximum is 2", len(guidance.AdminTerminology))
 	}
-	if len(guidance.Blockers) > 4 {
-		return fmt.Errorf("blockers count = %d, maximum is 4", len(guidance.Blockers))
+	if len(guidance.Blockers) > 2 {
+		return fmt.Errorf("blockers count = %d, maximum is 2", len(guidance.Blockers))
 	}
 	for i, blocker := range guidance.Blockers {
 		if strings.TrimSpace(blocker.Blocker) == "" || strings.TrimSpace(blocker.Response) == "" {
