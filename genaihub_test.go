@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	anthropic "github.com/anthropics/anthropic-sdk-go"
+
 	shared "go.crwd.dev/ce/zerotrust-analytics/domain"
 )
 
@@ -75,6 +77,13 @@ func TestGenAIHubGeneratorSummarizeRejectsEmptyGuidance(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "returned invalid guidance") {
 		t.Fatalf("error = %q, want invalid guidance context", err.Error())
+	}
+}
+
+func TestValidateGenAIHubStopReasonReportsTruncation(t *testing.T) {
+	err := validateGenAIHubStopReason(anthropic.StopReasonMaxTokens, genAIHubMaxTokens)
+	if err == nil || !strings.Contains(err.Error(), "truncated after 16384 output tokens") {
+		t.Fatalf("error = %v, want explicit truncation context", err)
 	}
 }
 
