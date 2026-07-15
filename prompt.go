@@ -32,17 +32,17 @@ PLATFORM AND SIGNAL RULES
 
 CONTENT RULES FOR EVERY ZERO GROUP AND FINDING
 - Use plain text inside every JSON string. Do not embed Markdown headings, bullets, tables, emphasis, or code fences; the application owns all presentation.
-- meaning: plain-English definition, one or two concise sentences.
-- security_impact: concrete consequence of low compliance, one or two concise sentences; no unsupported alarmism.
-- zta_evaluation: distinguish the state ZTA evaluates from mere hardware or software existence, one or two concise sentences.
-- measurement_caveat: optional concise caveat when exact evaluation behavior is uncertain; otherwise an empty string.
-- remediation_steps: one to five technically specific, ordered, platform-appropriate actions. Include GUI paths, policy locations, or commands when useful.
-- remediation_disruption: choose Low, Moderate, or High and provide a factual rationale. Low means reversible with no expected reboot or interruption. Moderate means reboot, staged rollout, or compatibility testing. High means firmware/hardware work, material downtime, or difficult rollback.
-- operational_considerations: prerequisites, dependencies, rollout order, compatibility, reboot, downtime, or rollback concerns in one concise paragraph.
-- verification_steps: one to three checks. Every check must include the expected successful result.
-- admin_terminology: optional vendor or administrator-facing names only when they help locate a setting; maximum four entries.
-- blockers: optional concrete blocker/response pairs only when useful; maximum four entries.
-- fleet_guidance: optional concise rollout advice for large fleets or disruptive changes; otherwise an empty string.
+- meaning: one plain-English sentence, maximum 35 words.
+- security_impact: one concrete sentence, maximum 40 words; no unsupported alarmism.
+- zta_evaluation: one sentence distinguishing the evaluated state from mere hardware or software existence, maximum 40 words.
+- measurement_caveat: optional, maximum 30 words, only when exact evaluation behavior is uncertain; otherwise an empty string.
+- remediation_steps: two to four technically specific, ordered, platform-appropriate actions, maximum 30 words each. Include GUI paths, policy locations, or commands when useful.
+- remediation_disruption: choose Low, Moderate, or High and provide a factual rationale of at most 30 words. Low means reversible with no expected reboot or interruption. Moderate means reboot, staged rollout, or compatibility testing. High means firmware/hardware work, material downtime, or difficult rollback.
+- operational_considerations: one sentence covering only material prerequisites, compatibility, reboot, downtime, or rollback concerns, maximum 45 words.
+- verification_steps: one or two checks, maximum 30 words each. Every check must include the expected successful result.
+- admin_terminology: default to an empty array; include at most two vendor-facing names only when they materially help locate a setting.
+- blockers: default to an empty array; include at most two concrete blocker/response pairs only when they are likely and control-specific.
+- fleet_guidance: optional rollout advice, maximum 35 words, only for large fleets or disruptive changes; otherwise an empty string.
 
 CLOSING RULES
 - recommended_next_steps must contain three to five concise, ordered, report-specific actions synthesized from the supplied findings.
