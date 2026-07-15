@@ -9,10 +9,9 @@ import (
 )
 
 const (
-	SummaryVersion              = "v1"
-	summaryPrefix               = "summary/cids/"
-	summaryObjectSuffix         = ".md"
-	summaryMetadataObjectSuffix = ".meta.json"
+	SummaryVersion      = "v1"
+	summaryPrefix       = "summary/cids/"
+	summaryObjectSuffix = ".md"
 )
 
 // SummaryProfile identifies the generation inputs that affect narrative output.
@@ -22,13 +21,13 @@ type SummaryProfile struct {
 	Model             string
 }
 
-// SummaryMetadata records the source report and generation profile used for a summary.
+// SummaryMetadata records the source report and generation profile stored on a summary object.
 type SummaryMetadata struct {
-	SourceSHA256      string    `json:"source_sha256"`
-	SummaryVersion    string    `json:"summary_version"`
-	NarrativeProvider string    `json:"narrative_provider"`
-	Model             string    `json:"model,omitempty"`
-	GeneratedAt       time.Time `json:"generated_at"`
+	SourceSHA256      string
+	SummaryVersion    string
+	NarrativeProvider string
+	Model             string
+	GeneratedAt       time.Time
 }
 
 // CurrentSummaryProfile returns the active narrative generation profile.
@@ -49,7 +48,7 @@ func CurrentSummaryProfile(cfg *Config) SummaryProfile {
 	}
 }
 
-// NewSummaryMetadata builds the metadata sidecar written with each summary.
+// NewSummaryMetadata builds the metadata written on each summary object.
 func NewSummaryMetadata(sourceSHA256 string, profile SummaryProfile, generatedAt time.Time) SummaryMetadata {
 	return SummaryMetadata{
 		SourceSHA256:      sourceSHA256,
@@ -104,11 +103,6 @@ func RenderPlaceholderSummary(report *shared.CIDReport) string {
 // SummaryObjectKey returns the object-store key for a CID narrative summary.
 func SummaryObjectKey(cid string) string {
 	return summaryPrefix + cid + summaryObjectSuffix
-}
-
-// SummaryMetadataObjectKey returns the object-store key for a CID summary metadata sidecar.
-func SummaryMetadataObjectKey(cid string) string {
-	return summaryPrefix + cid + summaryMetadataObjectSuffix
 }
 
 func effectiveNarrativeProvider(provider string) string {
