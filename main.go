@@ -94,7 +94,6 @@ func run(ctx context.Context, logger *slog.Logger, store reportStore, generator 
 				"skipping current cid report summary",
 				"cid", cid,
 				"summary_key", summarizer.SummaryObjectKey(cid),
-				"metadata_key", summarizer.SummaryMetadataObjectKey(cid),
 				"source_sha256", loaded.SourceSHA256,
 				"summary_version", profile.Version,
 				"narrative_provider", profile.NarrativeProvider,
@@ -128,7 +127,6 @@ func run(ctx context.Context, logger *slog.Logger, store reportStore, generator 
 			"narrative_provider", profile.NarrativeProvider,
 			"model", profile.Model,
 			"summary_key", summarizer.SummaryObjectKey(cid),
-			"metadata_key", summarizer.SummaryMetadataObjectKey(cid),
 		)
 	}
 
