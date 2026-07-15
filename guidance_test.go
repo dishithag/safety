@@ -21,6 +21,25 @@ func TestParseNarrativeGuidanceValidatesAndNormalizesResponse(t *testing.T) {
 	}
 }
 
+func TestParseNarrativeGuidanceAcceptsJSONFenceVariants(t *testing.T) {
+	analysis := testGuidanceAnalysis(t)
+	raw := "``` JSON\n" + mustMarshalGuidance(t, validGuidanceForAnalysis(analysis)) + "\n```"
+
+	if _, err := ParseNarrativeGuidance(raw, analysis); err != nil {
+		t.Fatalf("ParseNarrativeGuidance rejected a valid JSON fence variant: %v", err)
+	}
+}
+
+func TestParseNarrativeGuidanceReportsIncompleteFence(t *testing.T) {
+	analysis := testGuidanceAnalysis(t)
+	raw := "```json\n" + mustMarshalGuidance(t, validGuidanceForAnalysis(analysis))
+
+	_, err := ParseNarrativeGuidance(raw, analysis)
+	if err == nil || !strings.Contains(err.Error(), "may have been truncated") {
+		t.Fatalf("error = %v, want possible truncation context", err)
+	}
+}
+
 func TestParseNarrativeGuidanceRejectsContractViolations(t *testing.T) {
 	analysis := testGuidanceAnalysis(t)
 
