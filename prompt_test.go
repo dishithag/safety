@@ -38,6 +38,10 @@ func TestBuildNarrativePrompt(t *testing.T) {
 		"application owns all presentation",
 		"Do not claim an exact ZTA scoring formula",
 		"use each platform name exactly",
+		"Do not describe the internal selection method",
+		"PLATFORM-LEVEL IMPLEMENTATION RULES",
+		`"remediation_sequence"`,
+		`"shared_blockers"`,
 		`"zero_guidance_mode": "individual"`,
 		`"signal": "secure_boot_enabled"`,
 		`"signal": "hvci_enabled"`,
@@ -53,5 +57,8 @@ func TestBuildNarrativePrompt(t *testing.T) {
 	}
 	if strings.Contains(prompt, "0%% compliance") {
 		t.Fatalf("prompt contains an escaped display artifact:\n%s", prompt)
+	}
+	if strings.Contains(prompt, `"operational_tip"`) {
+		t.Fatalf("prompt contains removed operational_tip field:\n%s", prompt)
 	}
 }
