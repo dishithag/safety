@@ -18,11 +18,14 @@ GROUNDING RULES
 - Do not claim an exact ZTA scoring formula, signal weight, projected score increase, or official High/Medium/Low posture band.
 - A zero signal means 0% compliance was reported. It does not by itself prove that a control is absent, uninstalled, unsupported, or disabled.
 - A platform without zero signals has some compliant coverage for every reported signal; do not claim every control is enabled on every device.
+- Do not convert a compliance percentage into an affected-device count or claim that devices are exposed or compromised. Describe limited reported coverage and potential security impact conservatively.
 - If exact CrowdStrike evaluation behavior is not grounded, describe the likely evaluated state conservatively and populate measurement_caveat. Do not present speculation as fact.
 
 PLATFORM AND SIGNAL RULES
 - Return platforms in exactly the supplied order and use each platform name exactly.
 - Return findings in exactly the supplied priority_signals order. Do not add, remove, rank, or substitute signals.
+- Do not describe the internal selection method, bottom-three cutoff, exclusions, or tie handling in any customer-facing guidance.
+- Use the supplied display names in prose. Do not repeat raw signal identifiers unless they are required by an exact command or configuration key.
 - Tailor every remediation to that finding's platform. Do not provide instructions for unrelated operating systems.
 - For zero_guidance_mode "individual", return one zero_group per zero signal, in supplied order, with exactly one signal in each group.
 - For zero_guidance_mode "grouped", return at most five zero_groups. Group controls only by a genuine shared security function, prerequisite, or remediation path, and include every supplied zero signal exactly once.
@@ -33,7 +36,7 @@ PLATFORM AND SIGNAL RULES
 CONTENT RULES FOR EVERY ZERO GROUP AND FINDING
 - Use plain text inside every JSON string. Do not embed Markdown headings, bullets, tables, emphasis, or code fences; the application owns all presentation.
 - meaning: one plain-English sentence, maximum 35 words.
-- security_impact: one concrete sentence, maximum 40 words; no unsupported alarmism.
+- security_impact: one concrete sentence, maximum 40 words; describe potential impact without presenting limited compliance as proof of exposure or compromise.
 - zta_evaluation: one sentence distinguishing the evaluated state from mere hardware or software existence, maximum 40 words.
 - measurement_caveat: optional, maximum 30 words, only when exact evaluation behavior is uncertain; otherwise an empty string.
 - remediation_steps: two to four technically specific, ordered, platform-appropriate actions, maximum 30 words each. Include GUI paths, policy locations, or commands when useful.
@@ -41,13 +44,16 @@ CONTENT RULES FOR EVERY ZERO GROUP AND FINDING
 - operational_considerations: one sentence covering only material prerequisites, compatibility, reboot, downtime, or rollback concerns, maximum 45 words.
 - verification_steps: one or two checks, maximum 30 words each. Every check must include the expected successful result.
 - admin_terminology: default to an empty array; include at most two vendor-facing names only when they materially help locate a setting.
-- blockers: default to an empty array; include at most two concrete blocker/response pairs only when they are likely and control-specific.
-- fleet_guidance: optional rollout advice, maximum 35 words, only for large fleets or disruptive changes; otherwise an empty string.
+
+PLATFORM-LEVEL IMPLEMENTATION RULES
+- remediation_sequence: two to five ordered actions that consolidate shared prerequisites and dependencies across this platform's findings. Do not repeat every control's remediation steps.
+- shared_blockers: default to an empty array; include at most three blocker/response pairs only when they apply to multiple selected controls on this platform.
+- fleet_guidance: optional rollout advice, maximum 45 words, only when device count or disruption makes staged deployment materially useful; otherwise an empty string.
+- For a platform without zero groups or findings, remediation_sequence and shared_blockers must be empty arrays and fleet_guidance must be an empty string.
 
 CLOSING RULES
 - recommended_next_steps must contain three to five concise, ordered, report-specific actions synthesized from the supplied findings.
 - Prioritize zero-compliance review, shared prerequisites, safe pilots, verification, and reassessment when applicable.
-- operational_tip must be one practical, report-specific sentence. Do not write a generic conclusion.
 - Never predict an exact score increase.
 
 RESPONSE CONTRACT
@@ -67,9 +73,7 @@ RESPONSE CONTRACT
           "remediation_disruption": {"level": "Low|Moderate|High", "rationale": "..."},
           "operational_considerations": "...",
           "verification_steps": ["check and expected successful result"],
-          "admin_terminology": [],
-          "blockers": [{"blocker": "...", "response": "..."}],
-          "fleet_guidance": ""
+          "admin_terminology": []
         }
       ],
       "findings": [
@@ -83,15 +87,15 @@ RESPONSE CONTRACT
           "remediation_disruption": {"level": "Low|Moderate|High", "rationale": "..."},
           "operational_considerations": "...",
           "verification_steps": ["check and expected successful result"],
-          "admin_terminology": [],
-          "blockers": [{"blocker": "...", "response": "..."}],
-          "fleet_guidance": ""
+          "admin_terminology": []
         }
-      ]
+      ],
+      "remediation_sequence": ["...", "..."],
+      "shared_blockers": [{"blocker": "...", "response": "..."}],
+      "fleet_guidance": ""
     }
   ],
-  "recommended_next_steps": ["...", "...", "..."],
-  "operational_tip": "..."
+  "recommended_next_steps": ["...", "...", "..."]
 }`
 
 // BuildNarrativePrompt prepares a report and builds the strict LLM guidance request.
