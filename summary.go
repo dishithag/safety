@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	SummaryVersion      = "v2"
+	SummaryVersion      = "v4"
 	summaryPrefix       = "summary/cids/"
 	summaryObjectSuffix = ".md"
 )
