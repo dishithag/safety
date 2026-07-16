@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -135,7 +136,56 @@ func TestRunNoReports(t *testing.T) {
 	}
 }
 
+func TestRunWithOptionsLimitsConcurrentSummaries(t *testing.T) {
+	store := &fakeReportStore{
+		ids: []string{"one", "two", "three", "four"},
+	}
+	generator := &concurrencyTrackingGenerator{delay: 25 * time.Millisecond}
+
+	stats, err := runWithOptions(
+		context.Background(),
+		discardLogger(),
+		store,
+		generator,
+		summarizer.SummaryProfile{},
+		runOptions{Concurrency: 2, GenerationTimeout: time.Second},
+	)
+	if err != nil {
+		t.Fatalf("runWithOptions returned unexpected error: %v", err)
+	}
+	if want := (runStats{Total: 4, Processed: 4}); stats != want {
+		t.Fatalf("stats = %+v, want %+v", stats, want)
+	}
+	if got, want := generator.maximumConcurrency(), 2; got != want {
+		t.Fatalf("maximum concurrent summaries = %d, want %d", got, want)
+	}
+}
+
+func TestRunWithOptionsTimesOutStalledSummary(t *testing.T) {
+	store := &fakeReportStore{ids: []string{"stalled"}}
+	started := time.Now()
+
+	stats, err := runWithOptions(
+		context.Background(),
+		discardLogger(),
+		store,
+		blockingNarrativeGenerator{},
+		summarizer.SummaryProfile{},
+		runOptions{Concurrency: 1, GenerationTimeout: 20 * time.Millisecond},
+	)
+	if err != nil {
+		t.Fatalf("runWithOptions returned unexpected error: %v", err)
+	}
+	if want := (runStats{Total: 1, Failed: 1}); stats != want {
+		t.Fatalf("stats = %+v, want %+v", stats, want)
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("stalled summary took %s, want less than 1s", elapsed)
+	}
+}
+
 type fakeReportStore struct {
+	mu              sync.Mutex
 	ids             []string
 	listErr         error
 	reports         map[string]*summarizer.LoadedCIDReport
@@ -150,13 +200,17 @@ type fakeReportStore struct {
 }
 
 func (s *fakeReportStore) ListCIDReportIDs(context.Context) ([]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.listErr != nil {
 		return nil, s.listErr
 	}
-	return s.ids, nil
+	return append([]string(nil), s.ids...), nil
 }
 
 func (s *fakeReportStore) LoadCIDReportFromStore(_ context.Context, cid string) (*summarizer.LoadedCIDReport, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.loaded = append(s.loaded, cid)
 	if err := s.loadErr[cid]; err != nil {
 		return nil, err
@@ -169,6 +223,8 @@ func (s *fakeReportStore) LoadCIDReportFromStore(_ context.Context, cid string) 
 }
 
 func (s *fakeReportStore) LoadSummaryMetadata(_ context.Context, cid string) (summarizer.SummaryMetadata, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.metadataChecked = append(s.metadataChecked, cid)
 	if err := s.metadataErr[cid]; err != nil {
 		return summarizer.SummaryMetadata{}, false, err
@@ -178,6 +234,8 @@ func (s *fakeReportStore) LoadSummaryMetadata(_ context.Context, cid string) (su
 }
 
 func (s *fakeReportStore) WriteSummary(_ context.Context, cid string, _ string, metadata summarizer.SummaryMetadata) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.writeAttempts = append(s.writeAttempts, cid)
 	if s.writtenMetadata == nil {
 		s.writtenMetadata = make(map[string]summarizer.SummaryMetadata)
@@ -187,16 +245,62 @@ func (s *fakeReportStore) WriteSummary(_ context.Context, cid string, _ string, 
 }
 
 type fakeNarrativeGenerator struct {
+	mu         sync.Mutex
 	errByCID   map[string]error
 	summarized []string
 }
 
 func (g *fakeNarrativeGenerator) Summarize(_ context.Context, report *shared.CIDReport) (string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.summarized = append(g.summarized, report.CID)
 	if err := g.errByCID[report.CID]; err != nil {
 		return "", err
 	}
 	return "summary for " + report.CID, nil
+}
+
+type concurrencyTrackingGenerator struct {
+	mu      sync.Mutex
+	active  int
+	maximum int
+	delay   time.Duration
+}
+
+func (g *concurrencyTrackingGenerator) Summarize(ctx context.Context, report *shared.CIDReport) (string, error) {
+	g.mu.Lock()
+	g.active++
+	if g.active > g.maximum {
+		g.maximum = g.active
+	}
+	g.mu.Unlock()
+
+	defer func() {
+		g.mu.Lock()
+		g.active--
+		g.mu.Unlock()
+	}()
+	timer := time.NewTimer(g.delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-timer.C:
+		return "summary for " + report.CID, nil
+	}
+}
+
+func (g *concurrencyTrackingGenerator) maximumConcurrency() int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.maximum
+}
+
+type blockingNarrativeGenerator struct{}
+
+func (blockingNarrativeGenerator) Summarize(ctx context.Context, _ *shared.CIDReport) (string, error) {
+	<-ctx.Done()
+	return "", ctx.Err()
 }
 
 func discardLogger() *slog.Logger {
