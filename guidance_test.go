@@ -77,6 +77,13 @@ func TestParseNarrativeGuidanceRejectsContractViolations(t *testing.T) {
 			},
 			want: "want 3..5",
 		},
+		{
+			name: "missing platform remediation sequence",
+			mutate: func(guidance *NarrativeGuidance) {
+				guidance.Platforms[0].RemediationSequence = nil
+			},
+			want: "remediation_sequence count",
+		},
 	}
 
 	for _, tt := range tests {
