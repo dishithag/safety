@@ -43,7 +43,6 @@ type PlatformAnalysis struct {
 	ZeroGuidanceMode         string           `json:"zero_guidance_mode,omitempty"`
 	ZeroSignals              []SignalAnalysis `json:"zero_signals"`
 	PrioritySignals          []SignalAnalysis `json:"priority_signals"`
-	HighestSignal            *SignalAnalysis  `json:"highest_signal,omitempty"`
 	PrioritySignalsNearFull  bool             `json:"priority_signals_near_full"`
 }
 
@@ -121,7 +120,6 @@ func analyzePlatform(platform shared.PlatformSummary) (PlatformAnalysis, error) 
 	}
 
 	partialSignals := make([]scoredSignal, 0, len(platform.Compliance))
-	allSignals := make([]scoredSignal, 0, len(platform.Compliance))
 	for signal, compliance := range platform.Compliance {
 		if math.IsNaN(compliance) || math.IsInf(compliance, 0) || compliance < 0 || compliance > 1 {
 			return PlatformAnalysis{}, fmt.Errorf("signal %q compliance %.4f is outside 0..1", signal, compliance)
@@ -132,8 +130,6 @@ func analyzePlatform(platform shared.PlatformSummary) (PlatformAnalysis, error) 
 			DisplayName:       signalDisplayName(signal),
 			CompliancePercent: compliancePercent(compliance),
 		}
-		allSignals = append(allSignals, scoredSignal{analysis: prepared, raw: compliance})
-
 		switch {
 		case compliance == 0:
 			analysis.ZeroSignals = append(analysis.ZeroSignals, prepared)
@@ -151,17 +147,6 @@ func analyzePlatform(platform shared.PlatformSummary) (PlatformAnalysis, error) 
 		}
 		return partialSignals[i].raw < partialSignals[j].raw
 	})
-	sort.Slice(allSignals, func(i, j int) bool {
-		if allSignals[i].raw == allSignals[j].raw {
-			return allSignals[i].analysis.Signal < allSignals[j].analysis.Signal
-		}
-		return allSignals[i].raw > allSignals[j].raw
-	})
-	if len(allSignals) > 0 {
-		highest := allSignals[0].analysis
-		analysis.HighestSignal = &highest
-	}
-
 	analysis.AllSignalsFullyCompliant = analysis.SignalCount > 0 && analysis.FullComplianceCount == analysis.SignalCount
 	if len(analysis.ZeroSignals) > 0 {
 		analysis.ZeroGuidanceMode = "individual"
