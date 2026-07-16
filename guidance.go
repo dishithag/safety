@@ -14,14 +14,16 @@ const maxGroupedZeroGuidance = 5
 type NarrativeGuidance struct {
 	Platforms            []PlatformGuidance `json:"platforms"`
 	RecommendedNextSteps []string           `json:"recommended_next_steps"`
-	OperationalTip       string             `json:"operational_tip"`
 }
 
 // PlatformGuidance contains technical guidance for one analyzed platform.
 type PlatformGuidance struct {
-	Name       string              `json:"name"`
-	ZeroGroups []ZeroGroupGuidance `json:"zero_groups"`
-	Findings   []ControlGuidance   `json:"findings"`
+	Name                string              `json:"name"`
+	ZeroGroups          []ZeroGroupGuidance `json:"zero_groups"`
+	Findings            []ControlGuidance   `json:"findings"`
+	RemediationSequence []string            `json:"remediation_sequence"`
+	SharedBlockers      []GuidanceBlocker   `json:"shared_blockers"`
+	FleetGuidance       string              `json:"fleet_guidance"`
 }
 
 // ZeroGroupGuidance provides individual or grouped guidance for zero-compliance signals.
@@ -48,8 +50,6 @@ type TechnicalGuidance struct {
 	OperationalConsiderations string                `json:"operational_considerations"`
 	VerificationSteps         []string              `json:"verification_steps"`
 	AdminTerminology          []string              `json:"admin_terminology,omitempty"`
-	Blockers                  []GuidanceBlocker     `json:"blockers,omitempty"`
-	FleetGuidance             string                `json:"fleet_guidance,omitempty"`
 }
 
 // RemediationDisruption describes the operational risk of making a change.
@@ -149,6 +149,9 @@ func validateNarrativeGuidance(guidance *NarrativeGuidance, analysis *ReportAnal
 				return fmt.Errorf("platform %q signal %q: %w", expected.Name, finding.Signal, err)
 			}
 		}
+		if err := validatePlatformImplementation(actual, expected); err != nil {
+			return fmt.Errorf("platform %q implementation guidance: %w", expected.Name, err)
+		}
 	}
 
 	if len(guidance.RecommendedNextSteps) < 3 || len(guidance.RecommendedNextSteps) > 5 {
@@ -159,8 +162,33 @@ func validateNarrativeGuidance(guidance *NarrativeGuidance, analysis *ReportAnal
 			return fmt.Errorf("recommended_next_steps[%d] is empty", i)
 		}
 	}
-	if strings.TrimSpace(guidance.OperationalTip) == "" {
-		return fmt.Errorf("operational_tip is empty")
+	return nil
+}
+
+func validatePlatformImplementation(guidance *PlatformGuidance, platform *PlatformAnalysis) error {
+	hasFindings := len(platform.ZeroSignals) > 0 || len(platform.PrioritySignals) > 0
+	if !hasFindings {
+		if len(guidance.RemediationSequence) != 0 || len(guidance.SharedBlockers) != 0 || strings.TrimSpace(guidance.FleetGuidance) != "" {
+			return fmt.Errorf("received implementation guidance for a platform without findings")
+		}
+		return nil
+	}
+
+	if len(guidance.RemediationSequence) < 2 || len(guidance.RemediationSequence) > 5 {
+		return fmt.Errorf("remediation_sequence count = %d, want 2..5", len(guidance.RemediationSequence))
+	}
+	for i, step := range guidance.RemediationSequence {
+		if strings.TrimSpace(step) == "" {
+			return fmt.Errorf("remediation_sequence[%d] is empty", i)
+		}
+	}
+	if len(guidance.SharedBlockers) > 3 {
+		return fmt.Errorf("shared_blockers count = %d, maximum is 3", len(guidance.SharedBlockers))
+	}
+	for i, blocker := range guidance.SharedBlockers {
+		if strings.TrimSpace(blocker.Blocker) == "" || strings.TrimSpace(blocker.Response) == "" {
+			return fmt.Errorf("shared_blockers[%d] requires blocker and response", i)
+		}
 	}
 	return nil
 }
@@ -277,14 +305,6 @@ func validateTechnicalGuidance(guidance *TechnicalGuidance) error {
 	}
 	if len(guidance.AdminTerminology) > 2 {
 		return fmt.Errorf("admin_terminology count = %d, maximum is 2", len(guidance.AdminTerminology))
-	}
-	if len(guidance.Blockers) > 2 {
-		return fmt.Errorf("blockers count = %d, maximum is 2", len(guidance.Blockers))
-	}
-	for i, blocker := range guidance.Blockers {
-		if strings.TrimSpace(blocker.Blocker) == "" || strings.TrimSpace(blocker.Response) == "" {
-			return fmt.Errorf("blockers[%d] requires blocker and response", i)
-		}
 	}
 	return nil
 }
