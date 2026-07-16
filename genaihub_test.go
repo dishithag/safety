@@ -41,7 +41,7 @@ func TestGenAIHubGeneratorSummarize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Summarize returned error: %v", err)
 	}
-	if !strings.Contains(got, "# Zero Trust Assessment Report") || !strings.Contains(got, "**What it is:**") {
+	if !strings.Contains(got, "# Zero Trust Assessment Report") || !strings.Contains(got, "- **Purpose:**") {
 		t.Fatalf("Summarize() did not render the expected report:\n%s", got)
 	}
 	if !strings.Contains(invoker.prompt, "Return exactly one JSON object") {
