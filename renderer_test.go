@@ -39,8 +39,8 @@ func TestRenderNarrativeMarkdownUsesStableActionableStructure(t *testing.T) {
 	technical := &guidance.Platforms[0].Findings[0].TechnicalGuidance
 	technical.MeasurementCaveat = "Confirm the exact evaluated state in the current ZTA documentation."
 	technical.AdminTerminology = []string{"Memory integrity in Windows Security"}
-	technical.Blockers = []GuidanceBlocker{{Blocker: "Legacy driver conflict", Response: "Update or replace the incompatible driver before enforcement."}}
-	technical.FleetGuidance = "Start with compatible devices and isolate exceptions for review."
+	guidance.Platforms[0].SharedBlockers = []GuidanceBlocker{{Blocker: "Legacy driver conflict", Response: "Update or replace the incompatible driver before enforcement."}}
+	guidance.Platforms[0].FleetGuidance = "Start with compatible devices and isolate exceptions for review."
 
 	markdown, err := RenderNarrativeMarkdown(analysis, guidance)
 	if err != nil {
@@ -52,30 +52,29 @@ func TestRenderNarrativeMarkdownUsesStableActionableStructure(t *testing.T) {
 		"**CID:** `cid-render`",
 		"**Reported devices:** **1,000**",
 		"## High-Level Overview",
-		"**61.25/100**",
+		"**Overall posture: 61.25/100.**",
 		"Scores use a **0-100 scale**",
-		"`average_overall_score`",
-		"`average_os_score`",
-		"`average_sensor_config_score`",
-		"## Platform Analysis",
-		"### 1. Windows 11",
-		"#### Zero-Compliance Gaps",
+		"## 1. Windows 11",
+		"### Zero-Compliance Gaps",
+		"> ZTA recorded **0% compliance**",
 		"does not by itself prove that a control is absent",
-		"#### Priority Improvement Opportunities",
-		"Cutoff ties are included.",
-		"**What it is:**",
-		"**Security impact:**",
-		"**What ZTA evaluates:**",
-		"**Measurement caveat:**",
-		"**How to improve**",
-		"**Remediation disruption:** **Low**",
-		"**Operational considerations:**",
-		"**Administrator terminology**",
-		"**Common blockers**",
-		"**Verification**",
-		"**Fleet guidance:**",
+		"| Control | Signal ID | Reported Compliance |",
+		"\n---\n\n### Priority Improvement Opportunities",
+		"| Control | Signal ID | Compliance |",
+		"- **Purpose:**",
+		"- **Security impact:**",
+		"- **What ZTA checks:**",
+		"- **Measurement note:**",
+		"- **Also called:**",
+		"##### Remediation",
+		"##### Implementation Considerations",
+		"- **Estimated disruption:** **Low**",
+		"- **Operational considerations:**",
+		"##### Verification",
+		"### Recommended Remediation Sequence",
+		"#### Shared Blockers",
+		"#### Fleet Rollout Guidance",
 		"## Recommended Next Steps",
-		"> **Operational tip:**",
 	}
 	for _, want := range wants {
 		if !strings.Contains(markdown, want) {
@@ -83,9 +82,34 @@ func TestRenderNarrativeMarkdownUsesStableActionableStructure(t *testing.T) {
 		}
 	}
 
-	highLevel := strings.Split(markdown, "## Platform Analysis")[0]
+	highLevel := strings.Split(markdown, "## 1. Windows 11")[0]
 	if strings.Contains(highLevel, "Windows 11") {
 		t.Fatalf("high-level overview contains platform detail:\n%s", highLevel)
+	}
+	for _, unwanted := range []string{
+		"Cutoff ties",
+		"cutoff ties",
+		"average_overall_score",
+		"average_os_score",
+		"average_sensor_config_score",
+		"Operational tip",
+	} {
+		if strings.Contains(markdown, unwanted) {
+			t.Fatalf("markdown contains internal or redundant text %q:\n%s", unwanted, markdown)
+		}
+	}
+	if got := strings.Count(markdown, "**Reported devices:**"); got != 1 {
+		t.Fatalf("reported device label appears %d times, want once:\n%s", got, markdown)
+	}
+	for _, score := range []string{"61.25/100", "55.50/100", "67.00/100"} {
+		if got := strings.Count(markdown, score); got != 1 {
+			t.Fatalf("score %q appears %d times, want once:\n%s", score, got, markdown)
+		}
+	}
+	for _, signalID := range []string{"secure_boot_enabled", "hvci_enabled", "iommu_in_use", "smm_protections"} {
+		if got := strings.Count(markdown, "`"+signalID+"`"); got != 1 {
+			t.Fatalf("signal ID %q appears %d times, want once in its summary table:\n%s", signalID, got, markdown)
+		}
 	}
 	if strings.Contains(markdown, "## Executive Snapshot") {
 		t.Fatalf("markdown contains an unwanted Executive Snapshot heading:\n%s", markdown)
@@ -118,6 +142,7 @@ func TestRenderPlaceholderSummaryKeepsDeterministicReportShell(t *testing.T) {
 	for _, want := range []string{
 		"# Zero Trust Assessment Report",
 		"**Positive observation:** All **1 tracked signals** report **100% compliance**.",
+		"## 1. iOS",
 		"No remediation findings were selected",
 		"## Recommended Next Steps",
 	} {
