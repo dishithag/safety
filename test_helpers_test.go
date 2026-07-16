@@ -9,14 +9,15 @@ func validGuidanceForAnalysis(analysis *ReportAnalysis) *NarrativeGuidance {
 	guidance := &NarrativeGuidance{
 		Platforms:            make([]PlatformGuidance, 0, len(analysis.Platforms)),
 		RecommendedNextSteps: []string{"Review zero-compliance gaps.", "Pilot approved changes.", "Verify the next assessment."},
-		OperationalTip:       "Use a representative pilot group before broad deployment.",
 	}
 
 	for _, platform := range analysis.Platforms {
 		platformGuidance := PlatformGuidance{
-			Name:       platform.Name,
-			ZeroGroups: []ZeroGroupGuidance{},
-			Findings:   []ControlGuidance{},
+			Name:                platform.Name,
+			ZeroGroups:          []ZeroGroupGuidance{},
+			Findings:            []ControlGuidance{},
+			RemediationSequence: []string{},
+			SharedBlockers:      []GuidanceBlocker{},
 		}
 
 		if platform.ZeroGuidanceMode == "individual" {
@@ -44,6 +45,12 @@ func validGuidanceForAnalysis(analysis *ReportAnalysis) *NarrativeGuidance {
 				Signal:            signal.Signal,
 				TechnicalGuidance: testTechnicalGuidance(signal.DisplayName),
 			})
+		}
+		if len(platform.ZeroSignals) > 0 || len(platform.PrioritySignals) > 0 {
+			platformGuidance.RemediationSequence = []string{
+				"Confirm shared prerequisites across the selected controls.",
+				"Pilot approved changes and verify the resulting control state.",
+			}
 		}
 		guidance.Platforms = append(guidance.Platforms, platformGuidance)
 	}
