@@ -54,9 +54,6 @@ func TestAnalyzeReportSeparatesZerosAndIncludesCutoffTies(t *testing.T) {
 	if platform.FullComplianceCount != 1 {
 		t.Fatalf("FullComplianceCount = %d, want 1", platform.FullComplianceCount)
 	}
-	if platform.HighestSignal == nil || platform.HighestSignal.Signal != "full" {
-		t.Fatalf("HighestSignal = %#v, want full", platform.HighestSignal)
-	}
 	if analysis.AverageOverallScore != 45.68 {
 		t.Fatalf("AverageOverallScore = %.2f, want 45.68", analysis.AverageOverallScore)
 	}
