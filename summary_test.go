@@ -89,8 +89,7 @@ func TestRenderPlaceholderSummary(t *testing.T) {
 		"**CID:** `abc123`",
 		"**Reported devices:** **42**",
 		"## High-Level Overview",
-		"## Platform Analysis",
-		"### 1. Windows 11",
+		"## 1. Windows 11",
 		"## Recommended Next Steps",
 	} {
 		if !strings.Contains(summary, want) {
